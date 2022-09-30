@@ -56,6 +56,9 @@ if (is.null(opt$out)){opt$out<-opt$input}
 #########################################################################################################
 ### Main
 #########################################################################################################
+## setup to get the previous limits
+setwd(opt$input)
+opt$prev_thr<-"../../4_Het"
 ##get files
 het.file <- file.path(opt$input,"autosomal.het")
 roh.file<-file.path(opt$input,"autosomal.hom.indiv")
@@ -77,14 +80,17 @@ rohdata$IID<-as.character(rohdata$IID)
 rohdata$FID<-as.character(rohdata$FID)
 hetdata<-right_join(hetdata,rohdata,by=c("IID","FID"))
 hetdata<-inner_join(hetdata,crdata,by=c("IID","FID"))
-##make filters to exclude and include data
+### limits from first qc iteration
+limfile<-file.path(opt$prev_thr,"limits.het" )
+limdata<-read.table(limfile,header=T)
 
+##make filters to exclude and include data
 
 
 M<-lm(OHET~KB,data=hetdata)
 hetdata$outlier <- ifelse(hetdata$OHET - (coef(M)[1] + coef(M)[2]*hetdata$KB) 
-                          < -766.7772|
-                            hetdata$OHET>39263.88,
+                          < -4*limdata[3,2]|
+                            hetdata$OHET>limdata[1,2]+4*limdata[2,2],
                           "Excluded" ,"Included")
 
 
@@ -112,7 +118,7 @@ CR.het<-ggplot(hetdata, aes(x=log(F_miss),y=OHET))+
   guides(colour = guide_legend(override.aes = list(alpha=1)))+
              theme_bw()+
              xlab("log(missing)")+ylab("Heterozygosity")+
-             geom_hline(yintercept=39263.88,color="red")+
+             geom_hline(yintercept=limdata[1,2]+4*limdata[2,2],color="red")+
              theme(text=element_text(size=10, family="Helvetica"))
 
 
@@ -121,11 +127,11 @@ ROH.het<-ggplot(hetdata, aes(x=KB,y=OHET))+
   ggtitle(paste0("Heterozygosity vs ROH"))+
   theme_bw()+
   geom_abline(slope = M$coefficients[2], 
-              intercept = M$coefficients[1]-766.7772,colour="red",lwd=1.00)+
+              intercept = M$coefficients[1]-4*limdata[3,2],colour="red",lwd=1.00)+
   scale_color_manual(values  = c("blue","black"))+
   guides(colour = guide_legend(override.aes = list(alpha=1)))+
   xlab("Total length of ROH (kb)")+ylab("Heterozygosity")+
-  geom_hline(yintercept=39263.88,color="red",lwd=1.00)+
+  geom_hline(yintercept=limdata[1,2]+4*limdata[2,2],color="red",lwd=1.00)+
   #geom_hline(yintercept=mean(hetdata$OHET)-4*sd(hetdata$OHET),color="darkgreen",lwd=1.00)+
   theme(text=element_text(size=10, family="Helvetica"))
 
