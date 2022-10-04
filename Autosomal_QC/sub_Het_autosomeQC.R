@@ -90,6 +90,12 @@ excl.file <- file.path(opt$input,"Excluded.het")
 incl.file <- file.path(opt$input,"Included.het")
 write.table(Excluded,excl.file, quote=F,row.names = F)
 write.table(Included,incl.file, quote=F,row.names = F)
+### save heterozigozity limits for second iteration
+hetlimits<-data.frame("stat"=c("meanHET","sdHET","sd(Residuals)"),"value"=c(mean(hetdata$OHET), sd(hetdata$OHET),sd(abs(M$residuals))))
+limits.file <- file.path(opt$input,"limits.het")
+write.table(hetlimits,limits.file, quote=F,row.names = F)
+
+
 
 ###plotting
 excluded<-nrow(Excluded)
