@@ -33,16 +33,8 @@ second="FALSE"
 if [ -z ${parameters_file+x} ]; then
   echo "parameter_file unset. Using default parameters..."
 else
-
-  if [ -f "${GeneralQCDir}/parameters_file.sh" ]; then
-    echo "parameter file already present"
-    exit 1
-  fi
-
   source ${parameters_file}
   echo "parameters file set to: '${parameters_file}'"
-  cp ${parameters_file} "${GeneralQCDir}/parameters_file.sh"
-
 fi
 
 ###create working directories
@@ -63,6 +55,14 @@ mkdir -p "${GeneralQCDir}/6_PCA/proc"
 mkdir -p "${GeneralQCDir}/X_QC"
 mkdir -p "${GeneralQCDir}/Y_QC"
 mkdir -p "${GeneralQCDir}/MT_QC"
+
+if [ -z ${parameters_file+x} ]; then
+  if [ -f "${GeneralQCDir}/parameters_file.sh" ]; then
+    echo "parameter file already present"
+    exit 1
+  fi
+  cp ${parameters_file} "${GeneralQCDir}/parameters_file.sh"
+fi
 
 #if [ -f "${GeneralQCDir}/parameters.sh" ]; then
 #  echo "parameter file already present"
