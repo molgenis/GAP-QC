@@ -26,7 +26,8 @@ samplesheet="" ## Identifier list for samples
 ### Tools
 king_tool="" ## exact location of the KING executable
 cranefoot_tool="" ## exact location of the Cranefoot executable
-
+## variable for first or second iteration
+second="TRUE"
 
 ###create working directories
 mkdir -p "${GeneralQCDir}/"
@@ -47,26 +48,40 @@ mkdir -p "${GeneralQCDir}/X_QC"
 mkdir -p "${GeneralQCDir}/Y_QC"
 mkdir -p "${GeneralQCDir}/MT_QC"
  
-##################################################################################################
-################-------------oxford file to plink files--------########################################
+################################################# main ##############################################
 
-log="${GeneralQCDir}/0_pre/log/"
-mkdir -p  ${log}
-for chr in {1..22} "XY" "X" "MT"
-do
-
-sbatch -J "ox2plink.${chr}" \
--o "${log}/ox2plink.${chr}.out" \
--e "${log}/ox2plink.${chr}.err" \
--v ${codedir}/sub1.gensample_to_plink.sh \
-${GeneralQCDir}/0_pre/ \
-${InputDir} \
-${chr} 
-done
-### move haploid cromodomes out
-mv  ${GeneralQCDir}/0_pre/chr_Y.* ${GeneralQCDir}/Y_QC/
-mv  ${GeneralQCDir}/0_pre/chr_MT.* ${GeneralQCDir}/MT_QC/
-mv  ${GeneralQCDir}/0_pre/chr_X.* ${GeneralQCDir}/X_QC/
+if [ $second == "TRUE"  ];
+### if second iteration make sure to have the file ../manual.samples.to.exclude, this will create the content 
+then
+  for chr in {1..22} "XY"
+    do
+    cd ${GeneralQCDir}
+    plink --bfile ../4_Het/chr_${chr} \
+    --remove ../manual.samples.to.exclude \
+    --make-bed \
+    --out ${GeneralQCDir}/0_pre/chr_${chr}
+    done
+    
+else
+  ##################################################################################################
+  ################-------------oxford file to plink files--------########################################
+  log="${GeneralQCDir}/0_pre/log/"
+  mkdir -p  ${log}
+  for chr in {1..22} "XY" "X" "MT"
+    do
+    sbatch -J "ox2plink.${chr}" \
+    -o "${log}/ox2plink.${chr}.out" \
+    -e "${log}/ox2plink.${chr}.err" \
+    -v ${codedir}/sub1.gensample_to_plink.sh \
+    ${GeneralQCDir}/0_pre/ \
+    ${InputDir} \
+    ${chr} 
+    done
+    ### move haploid cromodomes out
+  mv  ${GeneralQCDir}/0_pre/chr_Y.* ${GeneralQCDir}/Y_QC/
+  mv  ${GeneralQCDir}/0_pre/chr_MT.* ${GeneralQCDir}/MT_QC/
+  mv  ${GeneralQCDir}/0_pre/chr_X.* ${GeneralQCDir}/X_QC/
+fi
 
 ##################################################################################################
 ################-------------Call rate filtering--------########################################
@@ -237,10 +252,13 @@ rm ${GeneralQCDir}/4_Het/proc/*temp*
   #retrieve Call rate information from samples
   cat ${GeneralQCDir}/2_CR_high/chr_*.incl_CR_sam> ${GeneralQCDir}/4_Het/CR.samples
 rm ${GeneralQCDir}/2_CR_high/chr_*.incl_CR_sam
+if [ $second == "TRUE"  ];
 ## create file with samples to exclude (het>4sd) and heterozygosity density plot
-##### change script location
-Rscript ${codedir}/sub_Het_autosomeQC.R -i ${GeneralQCDir}/4_Het -o ${GeneralQCDir}/plots
-
+then
+  Rscript ${codedir}/sub_Het_autosomeQC_second_it.R -i ${GeneralQCDir}/4_Het -o ${GeneralQCDir}/plots
+else
+  Rscript ${codedir}/sub_Het_autosomeQC.R -i ${GeneralQCDir}/4_Het -o ${GeneralQCDir}/plots
+fi
 
 ## Create QCed files corrected by heterozygosity 
 for chr in {1..22} "XY"
@@ -274,11 +292,17 @@ ${GeneralQCDir}/5_Relatedness/proc/full_autosomal_rel.temp.bim > ${GeneralQCDir}
 ## create file to exclude intentionally duplicated samples
 Rscript ${codedir}/sub_sample_duplicates.R -w ${GeneralQCDir}/5_Relatedness/proc/ -r ${intended_dup_samples_file}
 
+if [ $second != "TRUE"  ];
+then
 ## apply filters to remove intentionally ducplicated samples
- plink --bfile ${GeneralQCDir}/5_Relatedness/proc/full_data \
-       --remove ${GeneralQCDir}/5_Relatedness/proc/intended.duplicates \
-       --make-bed \
-       --out ${GeneralQCDir}/5_Relatedness/proc/full_data.no.dup
+plink --bfile ${GeneralQCDir}/5_Relatedness/proc/full_data \
+--remove ${GeneralQCDir}/5_Relatedness/proc/intended.duplicates \
+--make-bed \
+--out ${GeneralQCDir}/5_Relatedness/proc/full_data.no.dup
+sourcefam=${GeneralQCDir}/5_Relatedness/proc/full_data.no.dup
+else
+sourcefam=${GeneralQCDir}/5_Relatedness/proc/full_data
+fi
 
 ### genetic family concordance
 Rscript ${codedir}/sub_fam_check.R \
@@ -304,9 +328,17 @@ mkdir -p "${GeneralQCDir}/X_QC/2_CR_high"
 mkdir -p "${GeneralQCDir}/X_QC/3_MAF_HWE"
 
 ###############--------Call rate and duplicate SNP QC for X-----#########
-
+ if [ $second != "TRUE"  ];
+then
 cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples > \
 ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
+else
+cd  ${GeneralQCDir}
+cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples  \
+../manual.samples.to.exclude > ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
+
+cp ../X_QC/2_CR_high/chr_* /X_QC/0_pre/
+fi
 
 ### create plink files and call_rate stats for individuals and SNPs
 plink --bfile ${GeneralQCDir}/X_QC/chr_X \
