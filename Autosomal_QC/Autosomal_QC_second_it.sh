@@ -10,7 +10,7 @@ module load RPlus
 
 ##input and output variables
 InputDir="/groups/umcg-gdio/tmp01/projects/2021001/rawdata/project/results/gensamplefiles" ##directory with the location for gen-sample files
-GeneralQCDir="/groups/umcg-llnext/tmp01/data/genotypes/rawdata/gsa-md-v3/2022-10-04_general_qc/"  ###name & allocate your results directory
+GeneralQCDir="/groups/umcg-llnext/tmp01/data/genotypes/rawdata/project/2022-10-04_GSAMD-24v3_PGx_QC/output"  ###name & allocate your results directory
 codedir="/groups/umcg-gdio/tmp01/umcg-elopera/scripts/GAP/scripts/Autosomal_QC" 
 
 ### Reference files
@@ -31,6 +31,19 @@ call_rate_threshold_over_variants=0.03
 ### Variable for first or second iteration
 second="FALSE"
 
+if [ -z ${parameters_file+x} ]; then
+
+  if [ -f "${GeneralQCDir}/parameters_file.sh" ]; then
+    echo "parameter file already present"
+    exit 1
+  fi
+
+  source ${parameters_file}
+  echo "parameters file set to: '${parameters_file}'"
+  cp ${parameters_file} "${GeneralQCDir}/parameters_file.sh"
+
+fi
+
 ###create working directories
 mkdir -p "${GeneralQCDir}/"
 mkdir -p "${GeneralQCDir}/0_pre"
@@ -50,19 +63,19 @@ mkdir -p "${GeneralQCDir}/X_QC"
 mkdir -p "${GeneralQCDir}/Y_QC"
 mkdir -p "${GeneralQCDir}/MT_QC"
 
-if [ -f "${GeneralQCDir}/parameters.sh" ]; then
-  echo "parameter file already present"
-  exit 1
-fi
-
-rm "${GeneralQCDir}/parameters.sh"
-touch "${GeneralQCDir}/parameters.sh"
-
-### Parameter table
-for param in "InputDir" "GeneralQCDir" "codedir" "intended_dup_samples_file" "pedigree_ref" "MAFref" "ref1000G" "commonSNPs" "king_tool" "cranefoot_tool" "call_rate_threshold_over_samples" "call_rate_threshold_over_variants" "second"
-do
-  echo "${param}=${!param}" >> "${GeneralQCDir}/parameters.sh"
-done
+#if [ -f "${GeneralQCDir}/parameters.sh" ]; then
+#  echo "parameter file already present"
+#  exit 1
+#fi
+#
+#rm "${GeneralQCDir}/parameters.sh"
+#touch "${GeneralQCDir}/parameters.sh"
+#
+#### Parameter table
+#for param in "InputDir" "GeneralQCDir" "codedir" "intended_dup_samples_file" "pedigree_ref" "MAFref" "ref1000G" "commonSNPs" "king_tool" "cranefoot_tool" "call_rate_threshold_over_samples" "call_rate_threshold_over_variants" "second"
+#do
+#  echo "${param}=${!param}" >> "${GeneralQCDir}/parameters.sh"
+#done
 
 
 if [ $second == "TRUE"  ];
