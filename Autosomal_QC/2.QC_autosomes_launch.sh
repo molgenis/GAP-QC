@@ -56,7 +56,7 @@ mkdir -p "${GeneralQCDir}/X_QC"
 mkdir -p "${GeneralQCDir}/Y_QC"
 mkdir -p "${GeneralQCDir}/MT_QC"
 
-if [ -z ${parameters_file+x} ]; then
+if [ ! -z ${parameters_file+x} ]; then
   if [ -f "${GeneralQCDir}/parameters_file.sh" ]; then
     echo "parameter file already present"
     exit 1
