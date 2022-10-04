@@ -78,19 +78,19 @@ then
 else
   ##################################################################################################
   ################-------------oxford file to plink files--------########################################
-  log="${GeneralQCDir}/0_pre/log/"
-  mkdir -p  ${log}
-  for chr in {1..22} "XY" "X" "MT"
-    do
-    sbatch -J "ox2plink.${chr}" \
-    -o "${log}/ox2plink.${chr}.out" \
-    -e "${log}/ox2plink.${chr}.err" \
-    -v ${codedir}/sub1.gensample_to_plink.sh \
-    ${GeneralQCDir}/0_pre/ \
-    ${InputDir} \
-    ${chr} 
-    done
-    ### move haploid cromodomes out
+  #log="${GeneralQCDir}/0_pre/log/"
+  #mkdir -p  ${log}
+  #for chr in {1..22} "XY" "X" "MT"
+  #  do
+  #  sbatch -J "ox2plink.${chr}" \
+  #  -o "${log}/ox2plink.${chr}.out" \
+  #  -e "${log}/ox2plink.${chr}.err" \
+  #  -v ${codedir}/sub1.gensample_to_plink.sh \
+  #  ${GeneralQCDir}/0_pre/ \
+  #  ${InputDir} \
+  #  ${chr} 
+  #  done
+  #  ### move haploid cromodomes out
   mv  ${GeneralQCDir}/0_pre/chr_Y.* ${GeneralQCDir}/Y_QC/
   mv  ${GeneralQCDir}/0_pre/chr_MT.* ${GeneralQCDir}/MT_QC/
   mv  ${GeneralQCDir}/0_pre/chr_X.* ${GeneralQCDir}/X_QC/
