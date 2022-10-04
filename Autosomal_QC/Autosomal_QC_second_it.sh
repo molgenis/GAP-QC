@@ -9,7 +9,7 @@ module load RPlus
 
 ##input and output variables
 InputDir="/groups/umcg-gdio/tmp01/projects/2021001/rawdata/project/results/gensamplefiles" ##directory with the location for gen-sample files
-GeneralQCDir="/groups/umcg-llnext/tmp01/data/genotypes/rawdata/project/2022-10-04_GSAMD-24v3_PGx_QC/output"  ###name & allocate your results directory
+GeneralQCDir="/groups/umcg-gdio/tmp01/projects/2021001/rawdata/project/2022-10-04_GSAMD-24v3_PGx_QC/output"  ###name & allocate your results directory
 codedir="/home/umcg-rwarmerdam/pgx-pipeline/tools/GAP-QC/Autosomal_QC"
 
 ### Reference files
@@ -31,6 +31,8 @@ call_rate_threshold_over_variants=0.03
 second="FALSE"
 
 if [ -z ${parameters_file+x} ]; then
+  echo "parameter_file unset. Using default parameters..."
+else
 
   if [ -f "${GeneralQCDir}/parameters_file.sh" ]; then
     echo "parameter file already present"
