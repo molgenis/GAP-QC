@@ -8,11 +8,9 @@
 module load PLINK/1.9-beta6-20190617
 module load RPlus
 
-
 ##input and output variables
 InputDir="/groups/umcg-gdio/tmp01/projects/2021001/rawdata/project/results/gensamplefiles" ##directory with the location for gen-sample files
-GeneralQCDir="/groups/umcg-llnext/tmp01/data/genotypes/rawdata/gsa-md-v3/general_qc/8_second_iteration/"  ###name & allocate your results directory
-GeneralQCDir="/groups/umcg-llnext/tmp01/data/genotypes/rawdata/gsa-md-v3/general_qc"  ###name & allocate your results directory
+GeneralQCDir="/groups/umcg-llnext/tmp01/data/genotypes/rawdata/gsa-md-v3/2022-10-04_general_qc/"  ###name & allocate your results directory
 codedir="/groups/umcg-gdio/tmp01/umcg-elopera/scripts/GAP/scripts/Autosomal_QC" 
 
 ### Reference files
@@ -25,9 +23,13 @@ commonSNPs="/groups/umcg-gdio/tmp01/umcg-elopera/tools/gonl_1KGenomes_GSA_common
 ### Tools
 king_tool="/groups/umcg-gdio/tmp01/umcg-elopera/tools/king" ## exact location of the KING executable
 cranefoot_tool="/groups/umcg-gdio/tmp01/umcg-elopera/tools/cranefoot" ## exact location of the Cranefoot executable
-## variable for first or second iteration
-second="TRUE"
 
+### Call rate missingness settings (for final pass, initial pass is 20% missingness)
+call_rate_threshold_over_samples=0.03
+call_rate_threshold_over_variants=0.03
+
+### Variable for first or second iteration
+second="FALSE"
 
 ###create working directories
 mkdir -p "${GeneralQCDir}/"
@@ -47,6 +49,21 @@ mkdir -p "${GeneralQCDir}/6_PCA/proc"
 mkdir -p "${GeneralQCDir}/X_QC"
 mkdir -p "${GeneralQCDir}/Y_QC"
 mkdir -p "${GeneralQCDir}/MT_QC"
+
+if [ -f "${GeneralQCDir}/parameters.sh" ]; then
+  echo "parameter file already present"
+  exit 1
+fi
+
+rm "${GeneralQCDir}/parameters.sh"
+touch "${GeneralQCDir}/parameters.sh"
+
+### Parameter table
+for param in "InputDir" "GeneralQCDir" "codedir" "intended_dup_samples_file" "pedigree_ref" "MAFref" "ref1000G" "commonSNPs" "king_tool" "cranefoot_tool" "call_rate_threshold_over_samples" "call_rate_threshold_over_variants" "second"
+do
+  echo "${param}=${!param}" >> "${GeneralQCDir}/parameters.sh"
+done
+
 
 if [ $second == "TRUE"  ];
 ### if second iteration make sure to have the file ../manual.samples.to.exclude, this will create the content 
@@ -146,9 +163,9 @@ plink  --bfile ${GeneralQCDir}/1_CR80/chr_${chr}.2 \
 --out ${GeneralQCDir}/1_CR80/chr_${chr}.2
 
 ##create list of SNPs snd samples to exclude on the criteria callrate<=high
-awk '$6>0.01 {print $1, $2}' ${GeneralQCDir}/1_CR80/chr_${chr}.2.imiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.extrhigh_sam.temp
+awk -v threshold="${call_rate_threshold_over_samples}" '$6>threshold {print $1, $2}' ${GeneralQCDir}/1_CR80/chr_${chr}.2.imiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.extrhigh_sam.temp
 ##information for the heterozygosity analysis
-awk '$6<0.01 {print $1, $2,$6}' ${GeneralQCDir}/1_CR80/chr_${chr}.imiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.incl_CR_sam
+awk -v threshold="${call_rate_threshold_over_samples}" '$6<threshold {print $1, $2,$6}' ${GeneralQCDir}/1_CR80/chr_${chr}.imiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.incl_CR_sam
 done
 cat ${GeneralQCDir}/2_CR_high/chr_*.extrhigh_sam.temp|sort -u > ${GeneralQCDir}/2_CR_high/extrhigh.samples
 
@@ -166,7 +183,7 @@ plink  --bfile ${GeneralQCDir}/2_CR_high/chr_${chr} \
 --missing \
 --out ${GeneralQCDir}/2_CR_high/chr_${chr}
 
-awk '$5>0.01 {print $2}' ${GeneralQCDir}/1_CR80/chr_${chr}.lmiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.extrhigh_var.temp
+awk -v threshold="${call_rate_threshold_over_variants}" '$5>threshold {print $2}' ${GeneralQCDir}/1_CR80/chr_${chr}.lmiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.extrhigh_var.temp
 done
 cat ${GeneralQCDir}/2_CR_high/chr_*.extrhigh_var.temp > ${GeneralQCDir}/2_CR_high/extrhigh.vars
 rm ${GeneralQCDir}/2_CR_high/*.temp ##remove chrosome files for excluded samples and markers
