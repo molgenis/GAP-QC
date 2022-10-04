@@ -1,4 +1,3 @@
-
 #!/bin/bash
 #SBATCH --time=15:30:00
 #SBATCH --ntasks=1
@@ -11,7 +10,7 @@ module load RPlus
 ##input and output variables
 InputDir="/groups/umcg-gdio/tmp01/projects/2021001/rawdata/project/results/gensamplefiles" ##directory with the location for gen-sample files
 GeneralQCDir="/groups/umcg-llnext/tmp01/data/genotypes/rawdata/gsa-md-v3/2022-10-04_general_qc/"  ###name & allocate your results directory
-codedir="/groups/umcg-gdio/tmp01/umcg-elopera/scripts/GAP/scripts/Autosomal_QC" 
+codedir="/home/umcg-rwarmerdam/pgx-pipeline/tools/GAP-QC/Autosomal_QC"
 
 ### Reference files
 intended_dup_samples_file="/groups/umcg-gdio/tmp01/projects/2021001/rawdata/project/results/duplicate_IDs_GD_renamed.txt" ### file with intentional duplicates in the genotyping process (make sure it's without header, and the format is [samplename]_[0-9])
@@ -76,7 +75,6 @@ then
     --make-bed \
     --out ${GeneralQCDir}/0_pre/chr_${chr}
     done
-    
 else
   ##################################################################################################
   ################-------------oxford file to plink files--------########################################
@@ -98,7 +96,7 @@ else
   mv  ${GeneralQCDir}/0_pre/chr_X.* ${GeneralQCDir}/X_QC/
 fi
 
-  
+
   ##################################################################################################
 ################-------------Call rate filtering--------########################################
 ### start second iteration from here
