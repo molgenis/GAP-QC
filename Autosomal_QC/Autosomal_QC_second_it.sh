@@ -64,21 +64,6 @@ if [ -z ${parameters_file+x} ]; then
   cp ${parameters_file} "${GeneralQCDir}/parameters_file.sh"
 fi
 
-#if [ -f "${GeneralQCDir}/parameters.sh" ]; then
-#  echo "parameter file already present"
-#  exit 1
-#fi
-#
-#rm "${GeneralQCDir}/parameters.sh"
-#touch "${GeneralQCDir}/parameters.sh"
-#
-#### Parameter table
-#for param in "InputDir" "GeneralQCDir" "codedir" "intended_dup_samples_file" "pedigree_ref" "MAFref" "ref1000G" "commonSNPs" "king_tool" "cranefoot_tool" "call_rate_threshold_over_samples" "call_rate_threshold_over_variants" "second"
-#do
-#  echo "${param}=${!param}" >> "${GeneralQCDir}/parameters.sh"
-#done
-
-
 if [ $second == "TRUE"  ];
 ### if second iteration make sure to have the file ../manual.samples.to.exclude, this will create the content 
 then
