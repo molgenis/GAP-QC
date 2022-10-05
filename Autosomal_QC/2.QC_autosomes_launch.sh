@@ -44,6 +44,7 @@ mkdir -p "${GeneralQCDir}/5_Relatedness/proc2/"
 mkdir -p "${GeneralQCDir}/6_PCA"
 mkdir -p "${GeneralQCDir}/6_PCA/proc2"
 mkdir -p "${GeneralQCDir}/6_PCA/proc"
+mkdir -p "${GeneralQCDir}/7_samples_qc/"
 mkdir -p "${GeneralQCDir}/X_QC"
 mkdir -p "${GeneralQCDir}/Y_QC"
 mkdir -p "${GeneralQCDir}/MT_QC"
@@ -51,13 +52,17 @@ mkdir -p "${GeneralQCDir}/MT_QC"
 ################################################# main ##############################################
 
 if [ $second == "TRUE"  ];
-### if second iteration make sure to have the file ../manual.samples.to.exclude, this will create the content 
+### if second iteration make sure to have the file ../7_samples_qc/manual.samples.to.exclude & ../7_samples_qc/labels_change.fam, created manually
+## ../7_samples_qc/manual.samples.to.exclude  is a file with the samples to exclude resulting from intended duplicates, family relatedness, undintended duplicates and sex missmatches
+## ../7_samples_qc/labels_change.fam: is a fam file form the last QCed folder (most likely 4_het) with the neccesary label changes resulting form the relatedness analysis
+###  this will create the content of 0_pre form the manually corrected samples
 then
   for chr in {1..22} "XY"
     do
     cd ${GeneralQCDir}
     plink --bfile ../4_Het/chr_${chr} \
-    --remove ../manual.samples.to.exclude \
+    --fam ../7_samples_qc/labels_change.fam \
+    --remove ../7_samples_qc/manual.samples.to.exclude \
     --make-bed \
     --out ${GeneralQCDir}/0_pre/chr_${chr}
     done
