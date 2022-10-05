@@ -342,7 +342,7 @@ cd  ${GeneralQCDir}
 cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples  \
 ../manual.samples.to.exclude > ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
 
-cp ../X_QC/2_CR_high/chr_* /X_QC/0_pre/
+cp ../X_QC/2_CR_high/chr_*  ${GeneralQCDir}/X_QC/0_pre/
 fi
 
 ### create plink files and call_rate stats for individuals and SNPs
