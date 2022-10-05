@@ -335,22 +335,33 @@ mkdir -p "${GeneralQCDir}/X_QC/3_MAF_HWE"
 ###############--------Call rate and duplicate SNP QC for X-----#########
  if [ $second != "TRUE"  ];
 then
-cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples > \
-${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
-else
-cd  ${GeneralQCDir}
-cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples  \
-../manual.samples.to.exclude > ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
+  cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples > \
+  ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
 
-cp ../X_QC/2_CR_high/chr_*  ${GeneralQCDir}/X_QC/0_pre/
+  ### create plink files and call_rate stats for individuals and SNPs
+  plink --bfile ${GeneralQCDir}/X_QC/chr_X \
+  --make-bed  \
+  --remove ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples \
+  --missing \
+  --out ${GeneralQCDir}/X_QC/0_pre/chr_X
+
+else
+
+  cd  ${GeneralQCDir}
+  cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples  \
+  ../manual.samples.to.exclude > ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
+  
+  cp ../X_QC/2_CR_high/chr_* ${GeneralQCDir}/X_QC/0_pre/
+  
+  ### create plink files and call_rate stats for individuals and SNPs
+  plink --bfile ../X_QC//2_CR_high/chr_X \
+  --make-bed  \
+  --remove ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples \
+  --missing \
+  --out ${GeneralQCDir}/X_QC/0_pre/chr_X
+
 fi
 
-### create plink files and call_rate stats for individuals and SNPs
-plink --bfile ${GeneralQCDir}/X_QC/chr_X \
-     --make-bed  \
-     --remove ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples \
-     --missing \
-     --out ${GeneralQCDir}/X_QC/0_pre/chr_X
 
 ## generate list of duplicated SNPs (selecting the one with best call rate).
 ### change script location
