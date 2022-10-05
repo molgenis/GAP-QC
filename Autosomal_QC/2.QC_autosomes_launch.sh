@@ -311,7 +311,7 @@ fi
 
 ### genetic family concordance
 Rscript ${codedir}/sub_fam_check.R \
--p ${GeneralQCDir}/5_Relatedness/proc/full_data.no.dup \
+-p $sourcefam \
 -i ${pedigree_ref} \
  -k ${king_tool} \
  -C ${cranefoot_tool} \
