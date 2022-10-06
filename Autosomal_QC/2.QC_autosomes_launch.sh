@@ -6,22 +6,26 @@
 
 module load PLINK/1.9-beta6-20190617
 module load RPlus
+set -u
+set -e
 
-##input and output variables
-InputDir="/groups/umcg-gdio/tmp01/projects/2021001/rawdata/project/results/gensamplefiles" ##directory with the location for gen-sample files
-GeneralQCDir="/groups/umcg-gdio/tmp01/projects/2021001/rawdata/project/2022-10-04_GSAMD-24v3_PGx_QC/output"  ###name & allocate your results directory
-codedir="/home/umcg-rwarmerdam/pgx-pipeline/tools/GAP-QC/Autosomal_QC"
+### input and output variables
+## make sure the samples have the same pairing IDs in all the files they appear in
+InputDir="" ##directory with the location for gen-sample files
+GeneralQCDir=""  ##name & allocate your results directory
+codedir="" ##allocate your scripts directory 
 
 ### Reference files
-intended_dup_samples_file="/groups/umcg-gdio/tmp01/projects/2021001/rawdata/project/results/duplicate_IDs_GD_renamed.txt" ### file with intentional duplicates in the genotyping process (make sure it's without header, and the format is [samplename]_[0-9])
-pedigree_ref="/groups/umcg-wijmenga/tmp01/projects/pgx-pipeline/data/gsa-batch1-genotyping/next_20220512_v2.fam" ## pedigree information
-MAFref="/groups/umcg-gdio/tmp01/umcg-elopera/tools/af.ref.data.txt" ## reference for external marker concordance
-ref1000G="/apps/data/1000G/phase3/1000G_all" ## reference for PCA from 1000genomes
-commonSNPs="/groups/umcg-gdio/tmp01/umcg-elopera/tools/gonl_1KGenomes_GSA_common_SNPs" ## PCA reference of common snps from GoNL and 1000G, prunned according to doi:10.1038/ejhg.2014.19
+intended_dup_samples_file="" ### file with intentional duplicates in the genotyping process (make sure it's without header, and the format is [samplename]_[0-9]). Be sire to include all duplicates, otherwise KING will fail
+pedigree_ref="" ## pedigree information
+MAFref="" ## reference for external marker concordance
+ref1000G="" ## reference for PCA from 1000genomes
+commonSNPs="" ## PCA reference of common snps from GoNL and 1000G, prunned according to doi:10.1038/ejhg.2014.19
+samplesheet="" ## Identifier list for samples
 
 ### Tools
-king_tool="/groups/umcg-gdio/tmp01/umcg-elopera/tools/king" ## exact location of the KING executable
-cranefoot_tool="/groups/umcg-gdio/tmp01/umcg-elopera/tools/cranefoot" ## exact location of the Cranefoot executable
+king_tool="" ## exact location of the KING executable
+cranefoot_tool="" ## exact location of the Cranefoot executable
 
 ### Call rate missingness settings (for final pass, initial pass is 20% missingness)
 call_rate_threshold_over_samples=0.03
@@ -52,6 +56,7 @@ mkdir -p "${GeneralQCDir}/5_Relatedness/proc2/"
 mkdir -p "${GeneralQCDir}/6_PCA"
 mkdir -p "${GeneralQCDir}/6_PCA/proc2"
 mkdir -p "${GeneralQCDir}/6_PCA/proc"
+mkdir -p "${GeneralQCDir}/7_samples_qc/"
 mkdir -p "${GeneralQCDir}/X_QC"
 mkdir -p "${GeneralQCDir}/Y_QC"
 mkdir -p "${GeneralQCDir}/MT_QC"
@@ -64,8 +69,55 @@ if [ ! -z ${parameters_file+x} ]; then
   cp ${parameters_file} "${GeneralQCDir}/parameters_file.sh"
 fi
 
+################################################# main ##############################################
+
 if [ $second == "TRUE"  ];
-### if second iteration make sure to have the file ../manual.samples.to.exclude, this will create the content 
+### if second iteration make sure to have the file ../7_samples_qc/manual.samples.to.exclude & ../7_samples_qc/labels_change.fam, created manually
+## ../7_samples_qc/manual.samples.to.exclude  is a file with the samples to exclude resulting from intended duplicates, family relatedness, undintended duplicates and sex missmatches
+## ../7_samples_qc/labels_change.fam: is a fam file form the last QCed folder (most likely 4_het) with the neccesary label changes resulting form the relatedness analysis
+###  this will create the content of 0_pre form the manually corrected samples
+then
+  for chr in {1..22} "XY"
+    do
+    cd ${GeneralQCDir}
+    plink --bfile ../4_Het/chr_${chr} \
+    --fam ../7_samples_qc/labels_change.fam \
+    --remove ../7_samples_qc/manual.samples.to.exclude \
+    --make-bed \
+    --out ${GeneralQCDir}/0_pre/chr_${chr}
+    done
+
+else
+  ##################################################################################################
+  ################-------------oxford file to plink files--------########################################
+  log="${GeneralQCDir}/0_pre/log/"
+  mkdir -p  ${log}
+  for chr in {1..22} "XY" "X" "MT"
+    do
+    sbatch -J "ox2plink.${chr}" \
+    -o "${log}/ox2plink.${chr}.out" \
+    -e "${log}/ox2plink.${chr}.err" \
+    -v ${codedir}/sub1.gensample_to_plink.sh \
+    ${GeneralQCDir}/0_pre/ \
+    ${InputDir} \
+    ${chr}
+    done
+    ### move haploid cromodomes out
+  mv  ${GeneralQCDir}/0_pre/chr_Y.* ${GeneralQCDir}/Y_QC/
+  mv  ${GeneralQCDir}/0_pre/chr_MT.* ${GeneralQCDir}/MT_QC/
+  mv  ${GeneralQCDir}/0_pre/chr_X.* ${GeneralQCDir}/X_QC/
+fi
+
+if [ ! -z ${parameters_file+x} ]; then
+  if [ -f "${GeneralQCDir}/parameters_file.sh" ]; then
+    echo "parameter file already present"
+    exit 1
+  fi
+  cp ${parameters_file} "${GeneralQCDir}/parameters_file.sh"
+fi
+
+if [ $second == "TRUE"  ];
+### if second iteration make sure to have the file ../manual.samples.to.exclude, this will create the content
 then
   for chr in {1..22} "XY"
     do
@@ -88,7 +140,7 @@ else
   #  -v ${codedir}/sub1.gensample_to_plink.sh \
   #  ${GeneralQCDir}/0_pre/ \
   #  ${InputDir} \
-  #  ${chr} 
+  #  ${chr}
   #  done
   #  ### move haploid cromodomes out
   mv  ${GeneralQCDir}/0_pre/chr_Y.* ${GeneralQCDir}/Y_QC/
@@ -266,7 +318,6 @@ rm ${GeneralQCDir}/4_Het/proc/*temp*
   #retrieve Call rate information from samples
   cat ${GeneralQCDir}/2_CR_high/chr_*.incl_CR_sam> ${GeneralQCDir}/4_Het/CR.samples
 rm ${GeneralQCDir}/2_CR_high/chr_*.incl_CR_sam
-#second="TRUE"
 if [ $second == "TRUE"  ];
 ## create file with samples to exclude (het>4sd) and heterozygosity density plot
 then
@@ -292,21 +343,20 @@ find ${GeneralQCDir}/4_Het/ -name "*.bim" > ${GeneralQCDir}/5_Relatedness/proc/a
 sed -i 's/.bim//g' ${GeneralQCDir}/5_Relatedness/proc/allchr.list;
 #merge all chromosomes into one single genotype ...set of files (.fam, .bim, .bed)
 plink --merge-list ${GeneralQCDir}/5_Relatedness/proc/allchr.list \
---missing \
---out ${GeneralQCDir}/5_Relatedness/proc/full_autosomal_rel.temp
+      --missing \
+      --out ${GeneralQCDir}/5_Relatedness/proc/full_autosomal_rel.temp
 #separate the HLA SNPs
 awk '{if ($1 == 6 && $4 >= 28477797 && $4 <= 35000000) print $2}' \
 ${GeneralQCDir}/5_Relatedness/proc/full_autosomal_rel.temp.bim > ${GeneralQCDir}/5_Relatedness/proc/HLAexclude.txt
 
 ## apply filters to reduce SNP number
-plink --bfile ${GeneralQCDir}/5_Relatedness/proc/full_autosomal_rel.temp \
---exclude ${GeneralQCDir}/5_Relatedness/proc/HLAexclude.txt \
---make-bed \
---out ${GeneralQCDir}/5_Relatedness/proc/full_data
+ plink --bfile ${GeneralQCDir}/5_Relatedness/proc/full_autosomal_rel.temp \
+       --exclude ${GeneralQCDir}/5_Relatedness/proc/HLAexclude.txt \
+       --make-bed \
+       --out ${GeneralQCDir}/5_Relatedness/proc/full_data
 
 ## create file to exclude intentionally duplicated samples
 Rscript ${codedir}/sub_sample_duplicates.R -w ${GeneralQCDir}/5_Relatedness/proc/ -r ${intended_dup_samples_file}
-
 
 if [ $second != "TRUE"  ];
 then
@@ -320,22 +370,21 @@ else
 sourcefam=${GeneralQCDir}/5_Relatedness/proc/full_data
 fi
 
-
 ### genetic family concordance
 Rscript ${codedir}/sub_fam_check.R \
 -p $sourcefam \
 -i ${pedigree_ref} \
--k ${king_tool} \
--C ${cranefoot_tool} \
--w ${GeneralQCDir}/5_Relatedness/proc2/ \
--M FALSE \
--o ${GeneralQCDir}/plots/
-  ### change M to TRUE to draw pedigrees, but be sure to have pairing file (-c)
-  
-  #remove temp files
-  rm ${GeneralQCDir}/5_Relatedness/proc/*temp*
-  
-  #######################################################################################################
+ -k ${king_tool} \
+ -C ${cranefoot_tool} \
+ -w ${GeneralQCDir}/5_Relatedness/proc2/ \
+ -M FALSE \
+ -o ${GeneralQCDir}/plots/
+### change M to TRUE to draw pedigrees, but be sure to have pairing file (-c)
+
+#remove temp files
+rm ${GeneralQCDir}/5_Relatedness/proc/*temp*
+
+#######################################################################################################
 ############################--------X chromosome QC and sex check--------##############################
 
 #make working directories for X chromosome
@@ -345,26 +394,35 @@ mkdir -p "${GeneralQCDir}/X_QC/2_CR_high"
 mkdir -p "${GeneralQCDir}/X_QC/3_MAF_HWE"
 
 ###############--------Call rate and duplicate SNP QC for X-----#########
-
-
  if [ $second != "TRUE"  ];
 then
-cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples > \
-${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
-else
-cd  ${GeneralQCDir}
-cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples  \
-../manual.samples.to.exclude > ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
+  cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples > \
+  ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
 
-cp ../X_QC/2_CR_high/chr_* /X_QC/0_pre/
+  ### create plink files and call_rate stats for individuals and SNPs
+  plink --bfile ${GeneralQCDir}/X_QC/chr_X \
+  --make-bed  \
+  --remove ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples \
+  --missing \
+  --out ${GeneralQCDir}/X_QC/0_pre/chr_X
+
+else
+
+  cd  ${GeneralQCDir}
+  cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples  \
+  ../manual.samples.to.exclude > ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
+
+  cp ../X_QC/2_CR_high/chr_* ${GeneralQCDir}/X_QC/0_pre/
+
+  ### create plink files and call_rate stats for individuals and SNPs
+  plink --bfile ../X_QC//2_CR_high/chr_X \
+  --make-bed  \
+  --remove ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples \
+  --missing \
+  --out ${GeneralQCDir}/X_QC/0_pre/chr_X
+
 fi
 
-### create plink files and call_rate stats for individuals and SNPs
-plink --bfile ${GeneralQCDir}/X_QC/chr_X \
---make-bed  \
---remove ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples \
---missing \
---out ${GeneralQCDir}/X_QC/0_pre/chr_X
 
 ## generate list of duplicated SNPs (selecting the one with best call rate).
 ### change script location
@@ -374,23 +432,23 @@ Rscript ${codedir}/sub_position_duplicates.R -i ${GeneralQCDir}/X_QC/0_pre
 cat ${GeneralQCDir}/X_QC/0_pre/chr_X.excl.duplicates > ${GeneralQCDir}/X_QC/0_pre/extr.dups
 
 plink --bfile ${GeneralQCDir}/X_QC/0_pre/chr_X  \
---make-bed \
---exclude ${GeneralQCDir}/X_QC/0_pre/extr.dups \
---out ${GeneralQCDir}/X_QC/1_CR80/chr_X
+     --make-bed \
+     --exclude ${GeneralQCDir}/X_QC/0_pre/extr.dups \
+     --out ${GeneralQCDir}/X_QC/1_CR80/chr_X
 
 awk '$5>0.20 {print $2}' ${GeneralQCDir}/X_QC/0_pre/chr_X.lmiss > ${GeneralQCDir}/X_QC/1_CR80/chr_X.extr80_var
 cat ${GeneralQCDir}/X_QC/1_CR80/chr_*.extr80_var > ${GeneralQCDir}/X_QC/1_CR80/extr80.vars
 
 # exclude SNPs with a call rate < 80%
 plink --bfile ${GeneralQCDir}/X_QC/1_CR80/chr_X  \
---make-bed \
---exclude ${GeneralQCDir}/X_QC/1_CR80/extr80.vars \
---out ${GeneralQCDir}/X_QC/1_CR80/chr_X.2
+     --make-bed \
+     --exclude ${GeneralQCDir}/X_QC/1_CR80/extr80.vars \
+     --out ${GeneralQCDir}/X_QC/1_CR80/chr_X.2
 
 #calculates callrate stats from the previously filtered datafile (removed SNPS with call rate < 80%)
 plink  --bfile ${GeneralQCDir}/X_QC/1_CR80/chr_X.2 \
---missing \
---out ${GeneralQCDir}/X_QC/1_CR80/chr_X
+      --missing \
+      --out ${GeneralQCDir}/X_QC/1_CR80/chr_X
 
 #### NO SAMPLES are to be removed based on X chromosome call rate. 
 
@@ -398,9 +456,9 @@ awk '$5>0.01 {print $2}' ${GeneralQCDir}/X_QC/1_CR80/chr_X.lmiss > ${GeneralQCDi
 
 ## exclude SNPs callrate>99
 plink --bfile ${GeneralQCDir}/X_QC/1_CR80/chr_X.2 \
---make-bed \
---exclude ${GeneralQCDir}/X_QC/2_CR_high/extrhigh.vars \
---out ${GeneralQCDir}/X_QC/2_CR_high/chr_X
+     --make-bed \
+     --exclude ${GeneralQCDir}/X_QC/2_CR_high/extrhigh.vars \
+     --out ${GeneralQCDir}/X_QC/2_CR_high/chr_X
 
 #### Files with variants throughout the Call rate filtering steps. 
 cat ${GeneralQCDir}/X_QC/0_pre/chr_*.bim|awk '{print$2}' > ${GeneralQCDir}/X_QC/0_pre/untouched.snps
@@ -418,9 +476,9 @@ plink --bfile  ${GeneralQCDir}/X_QC/2_CR_high/chr_X  --impute-sex --make-bed --o
 Rscript ${codedir}/sub_sexCheck.R -i ${GeneralQCDir}/X_QC/0_pre/imputed.sexcheck \
 -p ${pedigree_ref} \
 -d ${GeneralQCDir}/5_Relatedness/proc2/equal.samples \
--o ${GeneralQCDir}/X_QC/
-  
-  grep -E 'Non concordant|Failed'  ${GeneralQCDir}/X_QC/sex_check/all.samples.concordance.txt| awk -F'\t' '{{print $2, $9}}' > ${GeneralQCDir}/X_QC/sex.flagged
+ -o ${GeneralQCDir}/X_QC/
+
+grep -E 'Non concordant|Failed'  ${GeneralQCDir}/X_QC/sex_check/all.samples.concordance.txt| awk -F'\t' '{{print $2, $9}}' > ${GeneralQCDir}/X_QC/sex.flagged
 ####################Filter out SNPs based on HW and MAF#############################
 ### X chromosome HWE QC is done in a separate script afer family and sex correction
 ### see sub_MendelianErrors_FounderStats.R afeter second iteration
@@ -428,61 +486,61 @@ Rscript ${codedir}/sub_sexCheck.R -i ${GeneralQCDir}/X_QC/0_pre/imputed.sexcheck
 ##################################################################################################
 ###########################-----------------PCA analysis---------------###########################
 ### filter reference Databases by the common SNPs
-plink --bfile ${ref1000G} \
---extract  ${commonSNPs} \
---make-bed \
---out ${GeneralQCDir}/6_PCA/proc/thg
-
+ plink --bfile ${ref1000G} \
+       --extract  ${commonSNPs} \
+       --make-bed \
+       --out ${GeneralQCDir}/6_PCA/proc/thg
+       
 
 ## filter also the cohort by common snps
-plink --bfile ${GeneralQCDir}/5_Relatedness/proc/full_data.no.dup \
---extract ${commonSNPs}  \
---make-bed \
---out ${GeneralQCDir}/6_PCA/proc2/allchr_join
+ plink --bfile ${GeneralQCDir}/5_Relatedness/proc/full_data.no.dup \
+       --extract ${commonSNPs}  \
+       --make-bed \
+       --out ${GeneralQCDir}/6_PCA/proc2/allchr_join
 
 ## make list of individuals to merge 
 echo "${GeneralQCDir}/6_PCA/proc2/allchr_join" >> ${GeneralQCDir}/6_PCA/proc2/allfiles.list
 echo "${GeneralQCDir}/6_PCA/proc/thg" >> ${GeneralQCDir}/6_PCA/proc2/allfiles.list
 
 ###merge all data
-plink --merge-list ${GeneralQCDir}/6_PCA/proc2/allfiles.list \
---merge-mode 3 \
---out ${GeneralQCDir}/6_PCA/proc2/full_data
+ plink --merge-list ${GeneralQCDir}/6_PCA/proc2/allfiles.list \
+       --merge-mode 3 \
+       --out ${GeneralQCDir}/6_PCA/proc2/full_data
 ###remove SNPs with more tha 3 alleles if there are
-if [ -e ${GeneralQCDir}/6_PCA/proc2/full_data.missnp ];
-then
-plink --bfile ${GeneralQCDir}/6_PCA/proc/thg \
---exclude ${GeneralQCDir}/6_PCA/proc2/full_data.missnp \
---make-bed \
---out ${GeneralQCDir}/6_PCA/proc2/allg.temp
+ if [ -e ${GeneralQCDir}/6_PCA/proc2/full_data.missnp ];
+  then
+      plink --bfile ${GeneralQCDir}/6_PCA/proc/thg \
+            --exclude ${GeneralQCDir}/6_PCA/proc2/full_data.missnp \
+            --make-bed \
+            --out ${GeneralQCDir}/6_PCA/proc2/allg.temp
+   
+      plink --bfile ${GeneralQCDir}/6_PCA/proc/goref \
+            --exclude ${GeneralQCDir}/6_PCA/proc2/full_data.missnp \
+            --make-bed \
+            --out ${GeneralQCDir}/6_PCA/proc2/allgonl.temp
+            
+      plink --bfile ${GeneralQCDir}/6_PCA/proc2/allchr_join \
+            --exclude ${GeneralQCDir}/6_PCA/proc2/full_data.missnp \
+           --make-bed \
+           --out ${GeneralQCDir}/6_PCA/proc2/allchr_join
+              
+              rm ${GeneralQCDir}/6_PCA/proc2/allfiles.list
 
-plink --bfile ${GeneralQCDir}/6_PCA/proc/goref \
---exclude ${GeneralQCDir}/6_PCA/proc2/full_data.missnp \
---make-bed \
---out ${GeneralQCDir}/6_PCA/proc2/allgonl.temp
+      echo "${GeneralQCDir}/6_PCA/proc2/allchr_join" >> ${GeneralQCDir}/6_PCA/proc2/allfiles.list
+      echo "${GeneralQCDir}/6_PCA/proc2/allg.temp" >> ${GeneralQCDir}/6_PCA/proc2/allfiles.list
+      echo "${GeneralQCDir}/6_PCA/proc2/allgonl.temp" >> ${GeneralQCDir}/6_PCA/proc2/allfiles.list
 
-plink --bfile ${GeneralQCDir}/6_PCA/proc2/allchr_join \
---exclude ${GeneralQCDir}/6_PCA/proc2/full_data.missnp \
---make-bed \
---out ${GeneralQCDir}/6_PCA/proc2/allchr_join
-
-rm ${GeneralQCDir}/6_PCA/proc2/allfiles.list
-
-echo "${GeneralQCDir}/6_PCA/proc2/allchr_join" >> ${GeneralQCDir}/6_PCA/proc2/allfiles.list
-echo "${GeneralQCDir}/6_PCA/proc2/allg.temp" >> ${GeneralQCDir}/6_PCA/proc2/allfiles.list
-echo "${GeneralQCDir}/6_PCA/proc2/allgonl.temp" >> ${GeneralQCDir}/6_PCA/proc2/allfiles.list
-
-plink --merge-list ${GeneralQCDir}/6_PCA/proc2/allfiles.list \
---out ${GeneralQCDir}/6_PCA/proc2/full_data
-fi
+      plink --merge-list ${GeneralQCDir}/6_PCA/proc2/allfiles.list \
+            --out ${GeneralQCDir}/6_PCA/proc2/full_data
+ fi
 
 ##extract the common snps again, filter by call rate and maf
-plink --bfile ${GeneralQCDir}/6_PCA/proc2/full_data \
---extract  ${commonSNPs} \
---maf 0.1 \
---geno 0.01 \
---make-bed \
---out ${GeneralQCDir}/6_PCA/PCA_data1
+ plink --bfile ${GeneralQCDir}/6_PCA/proc2/full_data \
+      --extract  ${commonSNPs} \
+      --maf 0.1 \
+      --geno 0.01 \
+      --make-bed \
+      --out ${GeneralQCDir}/6_PCA/PCA_data1
 
 ###define sample cluster to project on
 awk '{print $1,$2}' ${GeneralQCDir}/6_PCA/proc2/full_data.fam > ${GeneralQCDir}/6_PCA/proc2/merged_samples
@@ -501,11 +559,11 @@ Rscript ${codedir}/sub_PCA.R -i ${GeneralQCDir}/6_PCA \
 ### 2.nd PCA 
 ##extract selected samples by PCA
 plink --bfile ${GeneralQCDir}/6_PCA/PCA_data1 \
---keep ${GeneralQCDir}/6_PCA/1st.eur.samples \
---maf 0.1 \
---geno 0.01 \
---make-bed \
---out ${GeneralQCDir}/6_PCA/PCA_data2
+      --keep ${GeneralQCDir}/6_PCA/1st.eur.samples \
+      --maf 0.1 \
+      --geno 0.01 \
+      --make-bed \
+      --out ${GeneralQCDir}/6_PCA/PCA_data2
 
 ###get the clustering file only for the new samples
 
@@ -526,7 +584,7 @@ cat ${GeneralQCDir}/6_PCA/1st.excl.samples ${GeneralQCDir}/6_PCA/2nd.excl.sample
 ## activate if you want to remove population outliers
 #for chr in {1..22} "XY"
 # do
-##extract selected samples by secondPCA
+ ##extract selected samples by secondPCA
 # plink --bfile ${GeneralQCDir}/4_Het/chr_${chr} \
 #       --keep ${GeneralQCDir}/6_PCA/2nd.incl.samples \
 #       --make-bed \
