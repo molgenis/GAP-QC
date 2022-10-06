@@ -26,8 +26,33 @@ samplesheet="" ## Identifier list for samples
 ### Tools
 king_tool="" ## exact location of the KING executable
 cranefoot_tool="" ## exact location of the Cranefoot executable
-## variable for first or second iteration
-second="TRUE"
+
+### Call rate missingness settings (for final pass, initial pass is 20% missingness)
+call_rate_threshold_over_samples=0.03
+call_rate_threshold_over_variants=0.03
+
+### Variable for first or second iteration
+second="FALSE"
+
+### Code for an optional parameter file.
+
+# In order to use an optional parameter file,
+# add --export=parameter_file=<file_name.sh> to the sbatch command
+# Wherein <file.name.sh> is a shell script that sets all variable
+# names that you wish to set.
+
+# You can copy the setting of variables above as a starting
+# point for your parameters file.
+
+# Variable names not set in this
+# parameters file will remain the default values set above.
+
+if [ -z ${parameters_file+x} ]; then
+  echo "parameter_file unset. Using default parameters..."
+else
+  source ${parameters_file}
+  echo "parameters file set to: '${parameters_file}'"
+fi
 
 ###create working directories
 mkdir -p "${GeneralQCDir}/"
@@ -48,7 +73,15 @@ mkdir -p "${GeneralQCDir}/7_samples_qc/"
 mkdir -p "${GeneralQCDir}/X_QC"
 mkdir -p "${GeneralQCDir}/Y_QC"
 mkdir -p "${GeneralQCDir}/MT_QC"
- 
+
+if [ ! -z ${parameters_file+x} ]; then
+  if [ -f "${GeneralQCDir}/parameters_file.sh" ]; then
+    echo "parameter file already present"
+    exit 1
+  fi
+  cp ${parameters_file} "${GeneralQCDir}/parameters_file.sh"
+fi
+
 ################################################# main ##############################################
 
 if [ $second == "TRUE"  ];
@@ -66,7 +99,7 @@ then
     --make-bed \
     --out ${GeneralQCDir}/0_pre/chr_${chr}
     done
-    
+
 else
   ##################################################################################################
   ################-------------oxford file to plink files--------########################################
@@ -80,7 +113,7 @@ else
     -v ${codedir}/sub1.gensample_to_plink.sh \
     ${GeneralQCDir}/0_pre/ \
     ${InputDir} \
-    ${chr} 
+    ${chr}
     done
     ### move haploid cromodomes out
   mv  ${GeneralQCDir}/0_pre/chr_Y.* ${GeneralQCDir}/Y_QC/
@@ -88,7 +121,48 @@ else
   mv  ${GeneralQCDir}/0_pre/chr_X.* ${GeneralQCDir}/X_QC/
 fi
 
-##################################################################################################
+if [ ! -z ${parameters_file+x} ]; then
+  if [ -f "${GeneralQCDir}/parameters_file.sh" ]; then
+    echo "parameter file already present"
+    exit 1
+  fi
+  cp ${parameters_file} "${GeneralQCDir}/parameters_file.sh"
+fi
+
+if [ $second == "TRUE"  ];
+### if second iteration make sure to have the file ../manual.samples.to.exclude, this will create the content
+then
+  for chr in {1..22} "XY"
+    do
+    cd ${GeneralQCDir}
+    plink --bfile ../4_Het/chr_${chr} \
+    --remove ../manual.samples.to.exclude \
+    --make-bed \
+    --out ${GeneralQCDir}/0_pre/chr_${chr}
+    done
+else
+  ##################################################################################################
+  ################-------------oxford file to plink files--------########################################
+  #log="${GeneralQCDir}/0_pre/log/"
+  #mkdir -p  ${log}
+  #for chr in {1..22} "XY" "X" "MT"
+  #  do
+  #  sbatch -J "ox2plink.${chr}" \
+  #  -o "${log}/ox2plink.${chr}.out" \
+  #  -e "${log}/ox2plink.${chr}.err" \
+  #  -v ${codedir}/sub1.gensample_to_plink.sh \
+  #  ${GeneralQCDir}/0_pre/ \
+  #  ${InputDir} \
+  #  ${chr}
+  #  done
+  #  ### move haploid cromodomes out
+  mv  ${GeneralQCDir}/0_pre/chr_Y.* ${GeneralQCDir}/Y_QC/
+  mv  ${GeneralQCDir}/0_pre/chr_MT.* ${GeneralQCDir}/MT_QC/
+  mv  ${GeneralQCDir}/0_pre/chr_X.* ${GeneralQCDir}/X_QC/
+fi
+
+
+  ##################################################################################################
 ################-------------Call rate filtering--------########################################
 ### start second iteration from here
 
@@ -152,9 +226,9 @@ plink  --bfile ${GeneralQCDir}/1_CR80/chr_${chr}.2 \
 --out ${GeneralQCDir}/1_CR80/chr_${chr}.2
 
 ##create list of SNPs snd samples to exclude on the criteria callrate<=high
-awk '$6>0.01 {print $1, $2}' ${GeneralQCDir}/1_CR80/chr_${chr}.2.imiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.extrhigh_sam.temp
+awk -v threshold="${call_rate_threshold_over_samples}" '$6>threshold {print $1, $2}' ${GeneralQCDir}/1_CR80/chr_${chr}.2.imiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.extrhigh_sam.temp
 ##information for the heterozygosity analysis
-awk '$6<0.01 {print $1, $2,$6}' ${GeneralQCDir}/1_CR80/chr_${chr}.imiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.incl_CR_sam
+awk -v threshold="${call_rate_threshold_over_samples}" '$6<threshold {print $1, $2,$6}' ${GeneralQCDir}/1_CR80/chr_${chr}.imiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.incl_CR_sam
 done
 cat ${GeneralQCDir}/2_CR_high/chr_*.extrhigh_sam.temp|sort -u > ${GeneralQCDir}/2_CR_high/extrhigh.samples
 
@@ -172,7 +246,7 @@ plink  --bfile ${GeneralQCDir}/2_CR_high/chr_${chr} \
 --missing \
 --out ${GeneralQCDir}/2_CR_high/chr_${chr}
 
-awk '$5>0.01 {print $2}' ${GeneralQCDir}/1_CR80/chr_${chr}.lmiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.extrhigh_var.temp
+awk -v threshold="${call_rate_threshold_over_variants}" '$5>threshold {print $2}' ${GeneralQCDir}/1_CR80/chr_${chr}.lmiss > ${GeneralQCDir}/2_CR_high/chr_${chr}.extrhigh_var.temp
 done
 cat ${GeneralQCDir}/2_CR_high/chr_*.extrhigh_var.temp > ${GeneralQCDir}/2_CR_high/extrhigh.vars
 rm ${GeneralQCDir}/2_CR_high/*.temp ##remove chrosome files for excluded samples and markers
@@ -350,9 +424,9 @@ else
   cd  ${GeneralQCDir}
   cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples  \
   ../manual.samples.to.exclude > ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
-  
+
   cp ../X_QC/2_CR_high/chr_* ${GeneralQCDir}/X_QC/0_pre/
-  
+
   ### create plink files and call_rate stats for individuals and SNPs
   plink --bfile ../X_QC//2_CR_high/chr_X \
   --make-bed  \
