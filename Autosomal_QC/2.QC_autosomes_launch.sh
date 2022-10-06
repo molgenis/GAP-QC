@@ -34,6 +34,19 @@ call_rate_threshold_over_variants=0.03
 ### Variable for first or second iteration
 second="FALSE"
 
+### Code for an optional parameter file.
+
+# In order to use an optional parameter file,
+# add --export=parameter_file=<file_name.sh> to the sbatch command
+# Wherein <file.name.sh> is a shell script that sets all variable
+# names that you wish to set.
+
+# You can copy the setting of variables above as a starting
+# point for your parameters file.
+
+# Variable names not set in this
+# parameters file will remain the default values set above.
+
 if [ -z ${parameters_file+x} ]; then
   echo "parameter_file unset. Using default parameters..."
 else
