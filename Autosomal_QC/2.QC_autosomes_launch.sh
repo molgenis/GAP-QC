@@ -466,7 +466,7 @@ grep -E 'Non concordant|Failed'  ${GeneralQCDir}/X_QC/sex_check/all.samples.conc
        
 
 ## filter also the cohort by common snps
- plink --bfile ${GeneralQCDir}/5_Relatedness/proc/full_data.no.dup \
+ plink --bfile $sourcefam \
        --extract ${commonSNPs}  \
        --make-bed \
        --out ${GeneralQCDir}/6_PCA/proc2/allchr_join
