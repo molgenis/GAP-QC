@@ -121,46 +121,6 @@ else
   mv  ${GeneralQCDir}/0_pre/chr_X.* ${GeneralQCDir}/X_QC/
 fi
 
-if [ ! -z ${parameters_file+x} ]; then
-  if [ -f "${GeneralQCDir}/parameters_file.sh" ]; then
-    echo "parameter file already present"
-    exit 1
-  fi
-  cp ${parameters_file} "${GeneralQCDir}/parameters_file.sh"
-fi
-
-if [ $second == "TRUE"  ];
-### if second iteration make sure to have the file ../manual.samples.to.exclude, this will create the content
-then
-  for chr in {1..22} "XY"
-    do
-    cd ${GeneralQCDir}
-    plink --bfile ../4_Het/chr_${chr} \
-    --remove ../manual.samples.to.exclude \
-    --make-bed \
-    --out ${GeneralQCDir}/0_pre/chr_${chr}
-    done
-else
-  ##################################################################################################
-  ################-------------oxford file to plink files--------########################################
-  #log="${GeneralQCDir}/0_pre/log/"
-  #mkdir -p  ${log}
-  #for chr in {1..22} "XY" "X" "MT"
-  #  do
-  #  sbatch -J "ox2plink.${chr}" \
-  #  -o "${log}/ox2plink.${chr}.out" \
-  #  -e "${log}/ox2plink.${chr}.err" \
-  #  -v ${codedir}/sub1.gensample_to_plink.sh \
-  #  ${GeneralQCDir}/0_pre/ \
-  #  ${InputDir} \
-  #  ${chr}
-  #  done
-  #  ### move haploid cromodomes out
-  mv  ${GeneralQCDir}/0_pre/chr_Y.* ${GeneralQCDir}/Y_QC/
-  mv  ${GeneralQCDir}/0_pre/chr_MT.* ${GeneralQCDir}/MT_QC/
-  mv  ${GeneralQCDir}/0_pre/chr_X.* ${GeneralQCDir}/X_QC/
-fi
-
 
   ##################################################################################################
 ################-------------Call rate filtering--------########################################
