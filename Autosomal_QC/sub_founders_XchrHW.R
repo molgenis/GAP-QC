@@ -91,9 +91,9 @@ option_list = list(
               help="Path to plink files index, it assumes a bed, bim and fam file with the same file name", metavar="character"),
   make_option(c("-x", "--xplink"), type="character", default=NULL, 
               help="Path to plink files index, it assumes a bed, bim and fam file with the same file name", metavar="character"),
-  make_option(c("-pex", "--plinkexe"), metavar="character", default="PLINK/1.9-beta6-20190617", 
+  make_option(c("-e", "--plinkexe"), metavar="character", default="PLINK/1.9-beta6-20190617", 
               help="complete name of the plink module to load" ),
-  make_option(c("-ped", "--pedfamfile"), metavar="character", default=NULL, 
+  make_option(c("-f", "--pedfamfile"), metavar="character", default=NULL, 
               help=" .fam file with complete pedigree information with parents and sex in. [ORDER MUST BE THE SAME OF THE CURRENT .fam FILES] " ),
   make_option(c("-o", "--out"), metavar="character", default="./famCheck_genotypeQC", 
               help="Output path to save report")
