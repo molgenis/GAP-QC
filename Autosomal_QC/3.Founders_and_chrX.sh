@@ -43,7 +43,7 @@ ml ${plinkmod}
 
 plink \
 --bfile ${GeneralQCDir}/X_QC/2_CR_high/chr_X \
---exclude ${GeneralQCDir}\7_Founder_stats/founder.final.list.excluded.snps \
+--exclude ${GeneralQCDir}\7_FounderStats/founder.final.list.excluded.snps \
 --make-bed \
 --out ${GeneralQCDir}/X_QC/3_MAF_HWE/chr_X
 
@@ -55,7 +55,7 @@ for chr in {1..22} "XY"
 do
 plink \
 --bfile ${inputdir}/chr_${chr} \
---exclude ${GeneralQCDir}\7_Founder_stats/founder.final.list.excluded.snps \
+--exclude ${GeneralQCDir}\7_FounderStats/founder.final.list.excluded.snps \
 --make-bed \
 --out ${GeneralQCDir}/8_final_QCed_autosomes_X/chr_${chr}
 done
