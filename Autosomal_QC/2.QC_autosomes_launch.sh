@@ -359,86 +359,91 @@ rm ${GeneralQCDir}/5_Relatedness/proc/*temp*
 
 #######################################################################################################
 ############################--------X chromosome QC and sex check--------##############################
-
+for chr in "Y" "MT" "X"
+do
 #make working directories for X chromosome
-mkdir -p "${GeneralQCDir}/X_QC/0_pre"
-mkdir -p "${GeneralQCDir}/X_QC/1_CR80"
-mkdir -p "${GeneralQCDir}/X_QC/2_CR_high"
-mkdir -p "${GeneralQCDir}/X_QC/3_MAF_HWE"
-
+mkdir -p "${GeneralQCDir}/${chr}_QC/0_pre"
+mkdir -p "${GeneralQCDir}/${chr}_QC/1_CR80"
+mkdir -p "${GeneralQCDir}/${chr}_QC/2_CR_high"
+mkdir -p "${GeneralQCDir}/${chr}_QC/3_MAF_HWE"
 ###############--------Call rate and duplicate SNP QC for X-----#########
+ml PLINK/1.9-beta6-20190617
+
  if [ $second != "TRUE"  ];
 then
   cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples > \
-  ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
+  ${GeneralQCDir}/${chr}_QC/0_pre/excludebeforeX.samples
 
   ### create plink files and call_rate stats for individuals and SNPs
-  plink --bfile ${GeneralQCDir}/X_QC/chr_X \
+  plink --bfile ${GeneralQCDir}/${chr}_QC/chr_${chr} \
   --make-bed  \
-  --remove ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples \
+  --remove ${GeneralQCDir}/${chr}_QC/0_pre/excludebeforeX.samples \
   --missing \
-  --out ${GeneralQCDir}/X_QC/0_pre/chr_X
+  --out ${GeneralQCDir}/${chr}_QC/0_pre/chr_${chr}
 
 else
 
   cd  ${GeneralQCDir}
   cat ${GeneralQCDir}/4_Het/Excluded.het  ${GeneralQCDir}/2_CR_high/extrhigh.samples ${GeneralQCDir}/1_CR80/extr80.samples  \
-  ../manual.samples.to.exclude > ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples
-
-  cp ../X_QC/2_CR_high/chr_* ${GeneralQCDir}/X_QC/0_pre/
-
+  ../manual.samples.to.exclude > ${GeneralQCDir}/${chr}_QC/0_pre/excludebeforeX.samples
+  
+  cp ../${chr}_QC/2_CR_high/chr_* ${GeneralQCDir}/${chr}_QC/0_pre/
+  
   ### create plink files and call_rate stats for individuals and SNPs
-  plink --bfile ../X_QC//2_CR_high/chr_X \
+  plink --bfile ../${chr}_QC/2_CR_high/chr_${chr} \
   --make-bed  \
-  --remove ${GeneralQCDir}/X_QC/0_pre/excludebeforeX.samples \
+  --remove ${GeneralQCDir}/${chr}_QC/0_pre/excludebeforeX.samples \
   --missing \
-  --out ${GeneralQCDir}/X_QC/0_pre/chr_X
-
+  --out ${GeneralQCDir}/${chr}_QC/0_pre/chr_${chr}
 fi
+done
 
-
+####  chr Y has to be further processed when relatedness is finished in the founders step
+for chr in "X" "MT"
+do
 ## generate list of duplicated SNPs (selecting the one with best call rate).
 ### change script location
-Rscript ${codedir}/sub_position_duplicates.R -i ${GeneralQCDir}/X_QC/0_pre 
+Rscript ${codedir}/sub_position_duplicates.R -i ${GeneralQCDir}/${chr}_QC/0_pre 
 
 ##creates list of individuals and dup snps excluded for the X chromosome
-cat ${GeneralQCDir}/X_QC/0_pre/chr_X.excl.duplicates > ${GeneralQCDir}/X_QC/0_pre/extr.dups
+cat ${GeneralQCDir}/${chr}_QC/0_pre/chr_${chr}.excl.duplicates > ${GeneralQCDir}/${chr}_QC/0_pre/extr.dups
 
-plink --bfile ${GeneralQCDir}/X_QC/0_pre/chr_X  \
-     --make-bed \
-     --exclude ${GeneralQCDir}/X_QC/0_pre/extr.dups \
-     --out ${GeneralQCDir}/X_QC/1_CR80/chr_X
+plink --bfile ${GeneralQCDir}/${chr}_QC/0_pre/chr_${chr}  \
+--make-bed \
+--exclude ${GeneralQCDir}/${chr}_QC/0_pre/extr.dups \
+--out ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}
 
-awk '$5>0.20 {print $2}' ${GeneralQCDir}/X_QC/0_pre/chr_X.lmiss > ${GeneralQCDir}/X_QC/1_CR80/chr_X.extr80_var
-cat ${GeneralQCDir}/X_QC/1_CR80/chr_*.extr80_var > ${GeneralQCDir}/X_QC/1_CR80/extr80.vars
+awk '$5>0.20 {print $2}' ${GeneralQCDir}/${chr}_QC/0_pre/chr_${chr}.lmiss > ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.extr80_var
+cat ${GeneralQCDir}/${chr}_QC/1_CR80/chr_*.extr80_var > ${GeneralQCDir}/${chr}_QC/1_CR80/extr80.vars
 
 # exclude SNPs with a call rate < 80%
-plink --bfile ${GeneralQCDir}/X_QC/1_CR80/chr_X  \
-     --make-bed \
-     --exclude ${GeneralQCDir}/X_QC/1_CR80/extr80.vars \
-     --out ${GeneralQCDir}/X_QC/1_CR80/chr_X.2
+plink --bfile ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}  \
+--make-bed \
+--exclude ${GeneralQCDir}/${chr}_QC/1_CR80/extr80.vars \
+--out ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.2
 
 #calculates callrate stats from the previously filtered datafile (removed SNPS with call rate < 80%)
-plink  --bfile ${GeneralQCDir}/X_QC/1_CR80/chr_X.2 \
-      --missing \
-      --out ${GeneralQCDir}/X_QC/1_CR80/chr_X
+plink  --bfile ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.2 \
+--missing \
+--out ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}
 
 #### NO SAMPLES are to be removed based on X chromosome call rate. 
 
-awk '$5>0.01 {print $2}' ${GeneralQCDir}/X_QC/1_CR80/chr_X.lmiss > ${GeneralQCDir}/X_QC/2_CR_high/extrhigh.vars
+awk '$5>0.01 {print $2}' ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.lmiss > ${GeneralQCDir}/${chr}_QC/2_CR_high/extrhigh.vars
 
 ## exclude SNPs callrate>99
-plink --bfile ${GeneralQCDir}/X_QC/1_CR80/chr_X.2 \
-     --make-bed \
-     --exclude ${GeneralQCDir}/X_QC/2_CR_high/extrhigh.vars \
-     --out ${GeneralQCDir}/X_QC/2_CR_high/chr_X
+plink --bfile ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.2 \
+--make-bed \
+--exclude ${GeneralQCDir}/${chr}_QC/2_CR_high/extrhigh.vars \
+--out ${GeneralQCDir}/${chr}_QC/2_CR_high/chr_${chr}
 
 #### Files with variants throughout the Call rate filtering steps. 
-cat ${GeneralQCDir}/X_QC/0_pre/chr_*.bim|awk '{print$2}' > ${GeneralQCDir}/X_QC/0_pre/untouched.snps
-sort ${GeneralQCDir}/X_QC/0_pre/extr.dups ${GeneralQCDir}/X_QC/0_pre/untouched.snps|uniq -u >${GeneralQCDir}/X_QC/0_pre/full.snps 
+cat ${GeneralQCDir}/${chr}_QC/0_pre/chr_*.bim|awk '{print$2}' > ${GeneralQCDir}/${chr}_QC/0_pre/untouched.snps
+sort ${GeneralQCDir}/${chr}_QC/0_pre/extr.dups ${GeneralQCDir}/${chr}_QC/0_pre/untouched.snps|uniq -u >${GeneralQCDir}/${chr}_QC/0_pre/full.snps 
 
-cat ${GeneralQCDir}/X_QC/1_CR80/chr_*.2.bim|awk '{print$2}' > ${GeneralQCDir}/X_QC/1_CR80/incl80.vars
-cat ${GeneralQCDir}/X_QC/2_CR_high/chr_*.bim|awk '{print$2}' > ${GeneralQCDir}/X_QC/2_CR_high/inclhigh.vars
+cat ${GeneralQCDir}/${chr}_QC/1_CR80/chr_*.2.bim|awk '{print$2}' > ${GeneralQCDir}/${chr}_QC/1_CR80/incl80.vars
+cat ${GeneralQCDir}/${chr}_QC/2_CR_high/chr_*.bim|awk '{print$2}' > ${GeneralQCDir}/${chr}_QC/2_CR_high/inclhigh.vars
+done
 
 ######################### Impute sex and sexcheck ###################################
 plink --bfile  ${GeneralQCDir}/X_QC/2_CR_high/chr_X  --impute-sex --make-bed --out ${GeneralQCDir}/X_QC/0_pre/imputed
