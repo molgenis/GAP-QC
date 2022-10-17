@@ -27,7 +27,7 @@ HW.MAF.dist.plot  <- function(maf.dat, hw.dat, out, name=""){
   maf.dist.plot.chr <- ggplot(maf.dat, aes(x=MAF))+
     stat_density(aes(color= CHR), position= "identity", geom= "line")+
     ggtitle("MAF distribution per chromosome")+
-    scale_color_manual(labels=(chr.labels), values=rainbow(23))+
+    scale_color_manual(labels=(chr.labels), values=rainbow(24))+
     theme_bw()+
     theme(text=element_text(size=10, family="Helvetica"))
   
@@ -39,7 +39,7 @@ HW.MAF.dist.plot  <- function(maf.dat, hw.dat, out, name=""){
   
   hw.dist.plot.chr <- ggplot(hw.dat, aes(x=-log10(P)))+
     stat_density(aes(color= CHR), position= "identity", geom= "line")+
-    scale_color_manual(labels=names(chr.labels), values=rainbow(23))+
+    scale_color_manual(labels=names(chr.labels), values=rainbow(24))+
     ggtitle("HW pVal distribution  \n per chromosome")+
     xlab("-log10(HW-P)")+
     xlim(c(0, 20))+
@@ -50,7 +50,7 @@ HW.MAF.dist.plot  <- function(maf.dat, hw.dat, out, name=""){
     stat_density(aes(color= CHR), position= "identity", geom= "line")+
     geom_vline(xintercept = 6)+
     ggtitle("HW pVal distribution of \n SNPs with a MAF > 0.01")+
-    scale_color_manual(labels=names(chr.labels), values=rainbow(23))+
+    scale_color_manual(labels=names(chr.labels), values=rainbow(24))+
     xlim(c(0, 20))+
     xlab("-log10(HW-P)")+
     theme_bw()+
