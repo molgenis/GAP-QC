@@ -36,7 +36,7 @@ Rscript ${codedir}/sub_founders_XchrHW.R -p ${inputdir} \
                                          -px ${GeneralQCDir}/X_QC/2_CR_high/chr_X \
                                          -pex ${plinkmod} \
                                          -ped ${pedigree_fam} \
-                                         -out ${GeneralQCDir} \
+                                         -out ${GeneralQCDir}
 ### take the ${GeneralQCDir}\7_Founder_stats results to finalize cthe QC on both X and Autosomes
 ##remove SNPs flagged as ouliert for H-W in chromosome X
 ml ${plinkmod} 
