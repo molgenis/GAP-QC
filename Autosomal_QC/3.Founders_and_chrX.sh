@@ -33,7 +33,7 @@ fi
 ######### separate founders and create H-W for X chromosome founders stats. will create the folder ${GeneralQCDir}\7_Founder_stats
 ### create plink files and call_rate stats for individuals and SNPs
 Rscript ${codedir}/sub_founders_XchrHW.R -p ${inputdir} \
-                                         -px ${GeneralQCDir}/X_QC/2_CR_high/chr_X \
+                                         -x ${GeneralQCDir}/X_QC/2_CR_high/chr_X \
                                          -e ${plinkmod} \
                                          -f ${pedigree_fam} \
                                          -o ${GeneralQCDir}
