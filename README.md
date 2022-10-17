@@ -24,12 +24,11 @@ A feedback loop should be done manually by the user, after processing also manua
 - Plots output from all steps and also performs external concordance analyses. (requires external reference files) 
 - Performs also internal concordance anlyses (requires internal reference files) 
 
-3.MendelianErrors_FounderStats.R: This R script makes some additional steps 
-- Take as input a merged QCed chromosomes as well as the chomosome X 
+3.Founders_and_chrX.sh: This R script makes some additional steps 
+- Take as input QCed chromosomes as well as the chomosome X (with samples fully corrected by relatendess)
 - Uses corrected familial information to create founders-only dataset 
 - Calculates founder stats 
-- Calculates mendelian errors 
-- Calculates MAF and HWE filters for chormosome X with females-only
+- Calculates MAF and HWE filters for chormosome X with founder female-only
 
 4. Pre-imputation steps: located in the folder <Imputation>. This is the process to prepare the data for inputation with the HRC reference panel, following the steps indicated by the Sanger imputation server (https://imputation.sanger.ac.uk/). 
 - Remove insertions and deletions (script with number 1) 
