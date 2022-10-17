@@ -133,7 +133,7 @@ system(plink.merge.chr.Xchr.call)
 ##### Extract only females for X chr founder analysis. 
 ##### With phenotypes from the pairing file generate a plink file for the X chromosome that would include on females. 
 females.in.fam.file <- file.path(out.founder, "females.in.fam.txt")
-new.fam<-fread(paste0(out.founder,"/merged.Xchr.fam"),data.table=F,header=F, colClasses = c(rep("character", 6)) )
+new.fam<-fread(opt$pedfamfile,data.table=F,header=F, colClasses = c(rep("character", 6)) )
 names(new.fam)<-c("FID","IID","FATHER","MOTHER","Sex","PHENO")
 
 females.in.fam <- new.fam[which(new.fam$Sex == 2), c("FID","IID")]
@@ -174,7 +174,6 @@ plink.founderStats.Xchr.call <- paste0(
   "ml ", opt$plinkexe,"\n",
   "plink ", 
   "--bfile ", xchr.founders.plink.file,  " ", 
-  "--fam ",opt$pedfamfile, " \\",
   "--freq ", 
   "--hardy ",
   "--filter-founders ",
