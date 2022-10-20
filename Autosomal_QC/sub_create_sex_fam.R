@@ -8,9 +8,9 @@ option_list = list(
   make_option(c("-i", "--input"), type="character", default=NULL, 
               help="Path to plink files, it assumes a bed, bim and fam file with the same file name", metavar="character"),
   make_option(c("-f", "--famfile"), type="character", default=NULL, 
-              help="complete path of the pedigree file", type="character", default="" ),
+              help="complete path of the pedigree file"),
   make_option(c("-o", "--output"), type="character", default=NULL, 
-              help="complete path of the pedigree file", type="character", default="" )
+              help="complete path of the pedigree file", default="" )
 ); 
 opt_parser  <- OptionParser(option_list=option_list)
 opt <- parse_args(opt_parser)
