@@ -10,7 +10,7 @@ option_list = list(
   make_option(c("-f", "--famfile"), type="character", default=NULL, 
               help="complete path of the pedigree file"),
   make_option(c("-o", "--output"), type="character", default=NULL, 
-              help="complete path of the pedigree file", default="" )
+              help="complete path of the pedigree file" )
 ); 
 opt_parser  <- OptionParser(option_list=option_list)
 opt <- parse_args(opt_parser)
