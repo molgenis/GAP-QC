@@ -17,7 +17,7 @@ opt <- parse_args(opt_parser)
 out <- file.path(opt$output)
 ################################################################################
 ped<-fread(opt$famfile,data.table=F,colClasses = c(rep("character", 6)))
-fam<-fread(opt$input,data.table=F,colClasses = c(rep("character", 6))
+fam<-fread(opt$input,data.table=F,colClasses = c(rep("character", 6)))
 fam$sex<-ped$V5[match(fam$V2,ped$V2)]
 newfam<-fam[,c(1,2,3,4,7,6)]
 write.table(newfam,paste0(out,"/sex_info.fam"),quote = F,row.names = F,col.names = F)
