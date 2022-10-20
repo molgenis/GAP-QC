@@ -358,7 +358,12 @@ Rscript ${codedir}/sub_fam_check.R \
 rm ${GeneralQCDir}/5_Relatedness/proc/*temp*
 
 #######################################################################################################
-############################--------X chromosome QC and sex check--------##############################
+############################--------X, Y, MT chromosome QC --------##############################
+#### add sex to chromosome Y fam file
+Rscript ${codedir}/sub_create_sex_fam.R -i ${GeneralQCDir}/Y_QC/chr_Y.fam -f ${pedigree_ref} -o ${GeneralQCDir}/Y_QC/
+mv ${GeneralQCDir}/Y_QC/chr_Y.fam ${GeneralQCDir}/Y_QC/chr_Yold.fam
+mv ${GeneralQCDir}/Y_QC/sex_info.fam ${GeneralQCDir}//Y_QC/chr_Y.fam
+
 for chr in "Y" "MT" "X"
 do
 #make working directories for X chromosome
@@ -426,10 +431,14 @@ plink --bfile ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}  \
 plink  --bfile ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.2 \
 --missing \
 --out ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}
-
 #### NO SAMPLES are to be removed based on X chromosome call rate. 
-
-awk '$5>0.01 {print $2}' ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.lmiss > ${GeneralQCDir}/${chr}_QC/2_CR_high/extrhigh.vars
+if [ $chr == "MT"  ];
+then
+  #### CR. threshold for MT chromosome is less stringent
+  awk '$5>0.03 {print $2}' ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.lmiss > ${GeneralQCDir}/${chr}_QC/2_CR_high/extrhigh.vars
+else
+  awk '$5>0.01 {print $2}' ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.lmiss > ${GeneralQCDir}/${chr}_QC/2_CR_high/extrhigh.vars
+fi
 
 ## exclude SNPs callrate>99
 plink --bfile ${GeneralQCDir}/${chr}_QC/1_CR80/chr_${chr}.2 \
