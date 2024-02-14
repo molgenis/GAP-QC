@@ -10,7 +10,8 @@
 
 ## example run 
 ## the duplicated sample with the lesser missing rate will be kept
-### make sure you use a headless duplicated sample files & that your duplicated samples are named as [samplename]_1, [samplename]_2... etc
+## the input file [intended_duplicates] should contain at least 1 column with the sample names of the intentionally duplicated samples
+## This column should not have a header and the  duplicated shoud be indicated and named as [samplename]_1, [samplename]_2... etc
 #RScript Het_autosomeQC.R -w [working dir] -r [duplicated sample file]
 
 #########################################################################################################
@@ -30,7 +31,7 @@ option_list = list(
               help="Input path ", metavar="character"),
   
   make_option(c("-r", "--ref"), type="character", default=NULL, 
-              help="Output path to save report", metavar="character")
+              help="File with the intentionally duplicated samples", metavar="character")
 ); 
 
 opt_parser  <- OptionParser(option_list=option_list)
